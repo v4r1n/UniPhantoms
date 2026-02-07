@@ -6,4 +6,5 @@
 build/
 bin/
 
+# Documentation (local only)
 CLAUDE.md

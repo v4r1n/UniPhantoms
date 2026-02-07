@@ -3,10 +3,7 @@ package xyz.srnyx.uniphantoms.message;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
-
 import org.bukkit.command.CommandSender;
-import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -32,7 +29,6 @@ public class MiniMessageSender {
     @NotNull private final AnnoyingPlugin plugin;
     @NotNull private final BukkitAudiences audiences;
     @NotNull private final MiniMessage miniMessage;
-    @NotNull private final LegacyComponentSerializer legacySerializer;
     @NotNull private final FileConfiguration messages;
     @NotNull private final Map<String, String> globalPlaceholders;
 
@@ -68,8 +64,6 @@ public class MiniMessageSender {
         this.plugin = plugin;
         this.audiences = audiences;
         this.miniMessage = MiniMessage.miniMessage();
-        this.legacySerializer = LegacyComponentSerializer.legacyAmpersand();
-
         // Load messages.yml from plugin data folder
         final File messagesFile = new File(plugin.getDataFolder(), "messages.yml");
         if (!messagesFile.exists()) {
@@ -104,12 +98,7 @@ public class MiniMessageSender {
         final String message = getMessage(key, replacements);
         if (message.isEmpty()) return;
 
-        final Component component = parseMessage(message);
-        if (sender instanceof ConsoleCommandSender) {
-            sender.sendMessage(legacySerializer.serialize(component));
-        } else {
-            audiences.sender(sender).sendMessage(component);
-        }
+        audiences.sender(sender).sendMessage(parseMessage(message));
     }
 
     public void send(@NotNull Player player, @NotNull String key, @NotNull Map<String, String> replacements) {
@@ -155,6 +144,9 @@ public class MiniMessageSender {
     @NotNull
     private String convertLegacyToMiniMessage(@NotNull String message) {
         String result = message;
+        // Convert hex colors first: &#RRGGBB → <color:#RRGGBB>
+        result = result.replaceAll("&#([0-9a-fA-F]{6})", "<color:#$1>");
+        // Convert basic legacy codes
         for (final Map.Entry<String, String> entry : LEGACY_COLOR_MAP.entrySet()) {
             result = result.replace(entry.getKey(), entry.getValue());
         }
