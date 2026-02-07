@@ -8,7 +8,7 @@ Plugin used for per-player phantom spawning/control. *Made for [GeekSMP](https:/
 
 ## Download
 
-**✅ Stable:** You can download the latest **stable** version at [Modrinth](https://modrinth.com/plugin/personal-phantoms), [Hangar](https://hangar.papermc.io/srnyx/PersonalPhantoms), [Spigot](https://spigotmc.org/resources/106381), [Bukkit](https://dev.bukkit.org/projects/personal-phantoms), or [GitHub](https://github.com/srnyx/personal-phantoms/releases)
+**✅ Stable:** You can download the latest **stable** version at [Modrinth](https://modrinth.com/plugin/personal-phantoms), [Hangar](https://hangar.papermc.io/srnyx/UniPhantoms), [Spigot](https://spigotmc.org/resources/106381), [Bukkit](https://dev.bukkit.org/projects/personal-phantoms), or [GitHub](https://github.com/srnyx/personal-phantoms/releases)
 
 **🚧 Snapshot:** You can download the latest **snapshot** version at [actions/workflows/build.yml](https://github.com/srnyx/personal-phantoms/actions/workflows/build.yml)
 

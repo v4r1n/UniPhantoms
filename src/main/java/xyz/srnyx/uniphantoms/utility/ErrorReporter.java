@@ -1,15 +1,18 @@
-package xyz.srnyx.personalphantoms.utility;
+package xyz.srnyx.uniphantoms.utility;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
 
@@ -17,9 +20,13 @@ import java.util.logging.Logger;
  * Centralized error reporting and logging system
  */
 public class ErrorReporter {
+    private static final DateTimeFormatter FILE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
+    private static final DateTimeFormatter LOG_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
     @NotNull private final Logger logger;
     @NotNull private final File errorDir;
     private final boolean saveToFile;
+    @NotNull private final AtomicInteger errorCounter = new AtomicInteger(0);
 
     public ErrorReporter(@NotNull Logger logger, @NotNull File dataFolder, boolean saveToFile) {
         this.logger = logger;
@@ -97,13 +104,13 @@ public class ErrorReporter {
      * Save error details to a file
      */
     private void saveErrorToFile(@NotNull String context, @NotNull Throwable throwable, @Nullable String additionalInfo, @NotNull String stackTrace) {
-        final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
-        final String filename = "error_" + sdf.format(new Date()) + ".txt";
+        final LocalDateTime now = LocalDateTime.now();
+        final String filename = "error_" + now.format(FILE_FORMATTER) + "_" + errorCounter.getAndIncrement() + ".txt";
         final File errorFile = new File(errorDir, filename);
 
-        try (final FileWriter writer = new FileWriter(errorFile)) {
+        try (final BufferedWriter writer = Files.newBufferedWriter(errorFile.toPath(), StandardCharsets.UTF_8)) {
             writer.write("========== ERROR REPORT ==========\n");
-            writer.write("Timestamp: " + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()) + "\n");
+            writer.write("Timestamp: " + now.format(LOG_FORMATTER) + "\n");
             writer.write("Context: " + context + "\n");
 
             if (additionalInfo != null) {

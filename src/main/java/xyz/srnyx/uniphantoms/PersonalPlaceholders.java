@@ -1,4 +1,4 @@
-package xyz.srnyx.personalphantoms;
+package xyz.srnyx.uniphantoms;
 
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -10,14 +10,14 @@ import xyz.srnyx.annoyingapi.AnnoyingPAPIExpansion;
 
 
 public class PersonalPlaceholders extends AnnoyingPAPIExpansion {
-    @NotNull private final PersonalPhantoms plugin;
+    @NotNull private final UniPhantoms plugin;
 
-    public PersonalPlaceholders(@NotNull PersonalPhantoms plugin) {
+    public PersonalPlaceholders(@NotNull UniPhantoms plugin) {
         this.plugin = plugin;
     }
 
     @Override @NotNull
-    public PersonalPhantoms getAnnoyingPlugin() {
+    public UniPhantoms getAnnoyingPlugin() {
         return plugin;
     }
 
@@ -38,12 +38,12 @@ public class PersonalPlaceholders extends AnnoyingPAPIExpansion {
             return String.valueOf(!plugin.hasPhantomsEnabled(player));
         }
 
-        // %phantoms_status% - Returns "enabled" or "disabled" (legacy support)
+        // %phantoms_status% - Returns "enabled" or "disabled"
         if (player != null && identifier.equals("status")) {
-            return String.valueOf(!plugin.hasPhantomsEnabled(player));
+            return plugin.hasPhantomsEnabled(player) ? "enabled" : "disabled";
         }
 
-        // %phantoms_status_word% - Returns "enabled" or "disabled" as words
+        // %phantoms_status_word% - Returns "enabled" or "disabled" as words (alias for status)
         if (player != null && identifier.equals("status_word")) {
             return plugin.hasPhantomsEnabled(player) ? "enabled" : "disabled";
         }
@@ -51,7 +51,7 @@ public class PersonalPlaceholders extends AnnoyingPAPIExpansion {
         // %phantoms_status_<player>% - Check another player's status
         if (identifier.startsWith("status_")) {
             final Player target = Bukkit.getPlayer(identifier.substring(7));
-            return target == null ? "N/A" : String.valueOf(!plugin.hasPhantomsEnabled(target));
+            return target == null ? "N/A" : (plugin.hasPhantomsEnabled(target) ? "enabled" : "disabled");
         }
 
         // %phantoms_enabled_<player>% - Check if specific player has phantoms enabled

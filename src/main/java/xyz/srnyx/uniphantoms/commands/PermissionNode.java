@@ -1,4 +1,4 @@
-package xyz.srnyx.personalphantoms.commands;
+package xyz.srnyx.uniphantoms.commands;
 
 import org.bukkit.command.CommandSender;
 

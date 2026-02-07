@@ -1,1 +1,1 @@
-rootProject.name = "PersonalPhantoms"
+rootProject.name = "UniPhantoms"

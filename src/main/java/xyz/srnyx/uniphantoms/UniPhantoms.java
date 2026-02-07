@@ -1,4 +1,6 @@
-package xyz.srnyx.personalphantoms;
+package xyz.srnyx.uniphantoms;
+
+import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -14,25 +16,29 @@ import xyz.srnyx.annoyingapi.PluginPlatform;
 import xyz.srnyx.annoyingapi.data.StringData;
 import xyz.srnyx.annoyingapi.scheduler.TaskWrapper;
 
-import xyz.srnyx.personalphantoms.config.ConfigVersion;
-import xyz.srnyx.personalphantoms.message.MiniMessageSender;
-import xyz.srnyx.personalphantoms.utility.ErrorReporter;
+import xyz.srnyx.uniphantoms.config.ConfigVersion;
+import xyz.srnyx.uniphantoms.message.MiniMessageSender;
+import xyz.srnyx.uniphantoms.utility.ErrorReporter;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 
-public class PersonalPhantoms extends AnnoyingPlugin {
+public class UniPhantoms extends AnnoyingPlugin {
     @NotNull public static final String KEY = "pp_no-phantoms";
 
     public ConfigYml config;
     @NotNull private final Map<String, TaskWrapper> tasks = new HashMap<>();
+    @NotNull private final Map<UUID, Boolean> phantomCache = new ConcurrentHashMap<>();
 
-    // New systems
+    // Shared systems
+    @Nullable private BukkitAudiences audiences;
     @Nullable private ErrorReporter errorReporter;
     @Nullable private MiniMessageSender messageSender;
 
-    public PersonalPhantoms() {
+    public UniPhantoms() {
         options
                 .pluginOptions(pluginOptions -> pluginOptions.updatePlatforms(
                         PluginPlatform.modrinth("lzjYdd5h"),
@@ -43,18 +49,21 @@ public class PersonalPhantoms extends AnnoyingPlugin {
                         .entityDataColumns(KEY))
                 .registrationOptions
                 .automaticRegistration(automaticRegistration -> automaticRegistration.packages(
-                        "xyz.srnyx.personalphantoms.commands",
-                        "xyz.srnyx.personalphantoms.listeners"))
+                        "xyz.srnyx.uniphantoms.commands",
+                        "xyz.srnyx.uniphantoms.listeners"))
                 .papiExpansionToRegister(() -> new PersonalPlaceholders(this));
     }
 
     @Override
     public void enable() {
+        // Initialize shared BukkitAudiences (single instance for the plugin lifecycle)
+        audiences = BukkitAudiences.create(this);
+
         // Initialize error reporter first
         errorReporter = new ErrorReporter(getLogger(), getDataFolder(), true);
 
-        // Initialize message sender
-        messageSender = new MiniMessageSender(this);
+        // Initialize message sender with shared audiences
+        messageSender = new MiniMessageSender(this, audiences);
 
         // Check and migrate config if needed
         final ConfigVersion configVersion = new ConfigVersion(this);
@@ -73,6 +82,13 @@ public class PersonalPhantoms extends AnnoyingPlugin {
         // Cancel all tasks
         tasks.values().forEach(TaskWrapper::cancel);
         tasks.clear();
+        phantomCache.clear();
+
+        // Close shared BukkitAudiences to prevent listener leaks
+        if (audiences != null) {
+            audiences.close();
+            audiences = null;
+        }
     }
 
     @Override
@@ -80,8 +96,11 @@ public class PersonalPhantoms extends AnnoyingPlugin {
         config = new ConfigYml(this);
 
         // Update error reporter settings
-        if (errorReporter == null) {
-            errorReporter = new ErrorReporter(getLogger(), getDataFolder(), config.errorReporting.saveToFile);
+        errorReporter = new ErrorReporter(getLogger(), getDataFolder(), config.errorReporting.saveToFile);
+
+        // Recreate message sender to reload messages.yml
+        if (audiences != null) {
+            messageSender = new MiniMessageSender(this, audiences);
         }
 
         // Start tasks
@@ -96,8 +115,6 @@ public class PersonalPhantoms extends AnnoyingPlugin {
             if (previousTask != null) previousTask.cancel();
 
             // Get time & isNight
-            // Daytime: 0-12000
-            // Nighttime: 12000-24000
             final long time = world.getTime();
             final boolean isNight = time >= 12000;
 
@@ -105,8 +122,8 @@ public class PersonalPhantoms extends AnnoyingPlugin {
             if (isNight) resetAllStatistics(world);
 
             // Get delay
-            Long worldDelay = delay; // Configured specific delay
-            if (worldDelay == null) worldDelay = isNight ? 36000 - time : 12000 - time; // Automatic calculation
+            Long worldDelay = delay;
+            if (worldDelay == null) worldDelay = isNight ? 36000 - time : 12000 - time;
 
             // Start periodic task
             tasks.put(name, scheduler.runGlobalTaskTimer(() -> resetAllStatistics(world), worldDelay, period));
@@ -123,37 +140,46 @@ public class PersonalPhantoms extends AnnoyingPlugin {
     }
 
     /**
-     * Check if phantoms are enabled for a player
-     * Uses StringData from AnnoyingAPI
+     * Check if phantoms are enabled for a player (with cache for online players)
      */
     public boolean hasPhantomsEnabled(@NotNull OfflinePlayer player) {
-        return hasPhantomsEnabled(new StringData(this, player));
+        final Boolean cached = phantomCache.get(player.getUniqueId());
+        if (cached != null) return cached;
+        final boolean result = hasPhantomsEnabled(new StringData(this, player));
+        if (player.isOnline()) phantomCache.put(player.getUniqueId(), result);
+        return result;
     }
 
     /**
-     * Set phantom status for a player
-     * Uses StringData from AnnoyingAPI
+     * Set phantom status for a player (updates cache)
      */
     public void setPhantomsEnabled(@NotNull OfflinePlayer player, boolean enabled) {
         new StringData(this, player).set(KEY, enabled ? null : "true");
+        phantomCache.put(player.getUniqueId(), enabled);
 
-        // Log if debug mode is enabled
-        if (config.debugMode) {
+        if (config.debugMode && errorReporter != null) {
             errorReporter.info("Data", "Updated phantoms for " + player.getName() + ": " + enabled);
         }
     }
 
-    /**
-     * Get the error reporter instance
-     */
+    public void cachePhantomStatus(@NotNull UUID uuid, boolean enabled) {
+        phantomCache.put(uuid, enabled);
+    }
+
+    public void uncachePhantomStatus(@NotNull UUID uuid) {
+        phantomCache.remove(uuid);
+    }
+
+    @Nullable
+    public BukkitAudiences getAudiences() {
+        return audiences;
+    }
+
     @Nullable
     public ErrorReporter getErrorReporter() {
         return errorReporter;
     }
 
-    /**
-     * Get the MiniMessage sender instance
-     */
     @Nullable
     public MiniMessageSender getMessageSender() {
         return messageSender;

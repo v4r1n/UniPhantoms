@@ -1,4 +1,4 @@
-package xyz.srnyx.personalphantoms.utility;
+package xyz.srnyx.uniphantoms.utility;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -14,7 +14,7 @@ public class TimeFormatter {
      * Format milliseconds to human-readable string
      *
      * @param milliseconds time in milliseconds
-     * @return formatted string (e.g., "1h 30m 45s")
+     * @return formatted string (e.g., "1 hour 30 minutes 45 seconds")
      */
     @NotNull
     public static String format(long milliseconds) {
@@ -44,21 +44,29 @@ public class TimeFormatter {
         final long seconds = TimeUnit.MILLISECONDS.toSeconds(milliseconds);
 
         final StringBuilder result = new StringBuilder();
+        final String separator = format == TimeFormat.COMPACT ? "" : " ";
 
-        if (days > 0) {
-            result.append(days).append(format.getDaySuffix()).append(" ");
-        }
-        if (hours > 0) {
-            result.append(hours).append(format.getHourSuffix()).append(" ");
-        }
-        if (minutes > 0) {
-            result.append(minutes).append(format.getMinuteSuffix()).append(" ");
-        }
-        if (seconds > 0 || result.length() == 0) {
-            result.append(seconds).append(format.getSecondSuffix());
-        }
+        if (days > 0) appendUnit(result, days, "day", format, separator);
+        if (hours > 0) appendUnit(result, hours, "hour", format, separator);
+        if (minutes > 0) appendUnit(result, minutes, "minute", format, separator);
+        if (seconds > 0 || result.length() == 0) appendUnit(result, seconds, "second", format, separator);
 
         return result.toString().trim();
+    }
+
+    private static void appendUnit(@NotNull StringBuilder sb, long value, @NotNull String unit, @NotNull TimeFormat format, @NotNull String separator) {
+        if (sb.length() > 0) sb.append(separator);
+        sb.append(value);
+        switch (format) {
+            case LONG:
+                sb.append(" ").append(unit);
+                if (value != 1) sb.append("s");
+                break;
+            case SHORT:
+            case COMPACT:
+                sb.append(unit.charAt(0));
+                break;
+        }
     }
 
     /**
@@ -94,7 +102,7 @@ public class TimeFormatter {
 
     /**
      * Parse time string to milliseconds
-     * Supports formats: "1d2h3m4s", "1h30m", "45s", etc.
+     * Supports formats: "1d2h3m4s", "1h30m", "45s", "30" (bare number = seconds), etc.
      *
      * @param timeString the time string to parse
      * @return milliseconds, or 0 if invalid
@@ -127,6 +135,11 @@ public class TimeFormatter {
             }
         }
 
+        // Handle trailing bare number (treat as seconds)
+        if (num.length() > 0) {
+            total += TimeUnit.SECONDS.toMillis(Long.parseLong(num.toString()));
+        }
+
         return total;
     }
 
@@ -137,48 +150,16 @@ public class TimeFormatter {
         /**
          * Long format: "1 day", "2 hours", "30 minutes", "45 seconds"
          */
-        LONG("day", "hour", "minute", "second"),
+        LONG,
 
         /**
-         * Short format: "1d", "2h", "30m", "45s"
+         * Short format: "1d 2h 30m 45s"
          */
-        SHORT("d", "h", "m", "s"),
+        SHORT,
 
         /**
-         * Compact format: "1d", "2h", "30m", "45s" (same as SHORT)
+         * Compact format: "1d2h30m45s" (no spaces)
          */
-        COMPACT("d", "h", "m", "s");
-
-        private final String daySuffix;
-        private final String hourSuffix;
-        private final String minuteSuffix;
-        private final String secondSuffix;
-
-        TimeFormat(@NotNull String daySuffix, @NotNull String hourSuffix, @NotNull String minuteSuffix, @NotNull String secondSuffix) {
-            this.daySuffix = daySuffix;
-            this.hourSuffix = hourSuffix;
-            this.minuteSuffix = minuteSuffix;
-            this.secondSuffix = secondSuffix;
-        }
-
-        @NotNull
-        public String getDaySuffix() {
-            return daySuffix;
-        }
-
-        @NotNull
-        public String getHourSuffix() {
-            return hourSuffix;
-        }
-
-        @NotNull
-        public String getMinuteSuffix() {
-            return minuteSuffix;
-        }
-
-        @NotNull
-        public String getSecondSuffix() {
-            return secondSuffix;
-        }
+        COMPACT
     }
 }

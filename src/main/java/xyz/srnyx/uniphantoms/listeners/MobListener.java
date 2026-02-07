@@ -1,4 +1,4 @@
-package xyz.srnyx.personalphantoms.listeners;
+package xyz.srnyx.uniphantoms.listeners;
 
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -8,37 +8,35 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 
 import org.jetbrains.annotations.NotNull;
 
 import xyz.srnyx.annoyingapi.AnnoyingListener;
 
-import xyz.srnyx.personalphantoms.PersonalPhantoms;
+import xyz.srnyx.uniphantoms.UniPhantoms;
 
 
 public class MobListener extends AnnoyingListener {
-    @NotNull private final PersonalPhantoms plugin;
+    @NotNull private final UniPhantoms plugin;
 
-    public MobListener(@NotNull PersonalPhantoms plugin) {
+    public MobListener(@NotNull UniPhantoms plugin) {
         this.plugin = plugin;
     }
 
     @Override @NotNull
-    public PersonalPhantoms getAnnoyingPlugin() {
+    public UniPhantoms getAnnoyingPlugin() {
         return plugin;
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     public void onEntityTargetLivingEntity(@NotNull EntityTargetLivingEntityEvent event) {
         if (event.getEntity().getType() != EntityType.PHANTOM) return;
         final LivingEntity target = event.getTarget();
         if (target instanceof Player && plugin.isWhitelistedWorld(target.getWorld()) && !plugin.hasPhantomsEnabled((Player) target)) event.setCancelled(true);
     }
 
-    /**
-     * Called when an entity is damaged by an entity
-     */
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     public void onEntityDamageByEntity(@NotNull EntityDamageByEntityEvent event) {
         final Entity damager = event.getDamager();
         if (!plugin.isWhitelistedWorld(damager.getWorld())) return;
@@ -52,13 +50,16 @@ public class MobListener extends AnnoyingListener {
         if (damager.getType() == EntityType.PHANTOM && target instanceof Player && !plugin.hasPhantomsEnabled((Player) target)) event.setCancelled(true);
     }
 
-    /**
-     * Called when a player joins a server
-     */
     @EventHandler
     public void onPlayerJoin(@NotNull PlayerJoinEvent event) {
-        // Reset statistic
         final Player player = event.getPlayer();
-        if (plugin.isWhitelistedWorld(player.getWorld()) && !plugin.hasPhantomsEnabled(player)) PersonalPhantoms.resetStatistic(player);
+        final boolean enabled = plugin.hasPhantomsEnabled(player);
+        plugin.cachePhantomStatus(player.getUniqueId(), enabled);
+        if (plugin.isWhitelistedWorld(player.getWorld()) && !enabled) UniPhantoms.resetStatistic(player);
+    }
+
+    @EventHandler
+    public void onPlayerQuit(@NotNull PlayerQuitEvent event) {
+        plugin.uncachePhantomStatus(event.getPlayer().getUniqueId());
     }
 }

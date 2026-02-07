@@ -30,7 +30,7 @@ worlds-blacklist:
 
 # การรายงานข้อผิดพลาด (ERROR REPORTING)
 error-reporting:
-  # บันทึกรายงานข้อผิดพลาดลงไฟล์ในโฟลเดอร์ plugins/PersonalPhantoms/errors/
+  # บันทึกรายงานข้อผิดพลาดลงไฟล์ในโฟลเดอร์ plugins/UniPhantoms/errors/
   save-to-file: true
 
   # แสดงข้อความข้อผิดพลาดโดยละเอียดในคอนโซล (มีประโยชน์สำหรับการแก้ไขจุดบกพร่อง)

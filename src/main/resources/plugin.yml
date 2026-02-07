@@ -1,4 +1,4 @@
-name: UniPhantoms
+name: ${name}
 description: ${description}
 authors:
   - srnyx

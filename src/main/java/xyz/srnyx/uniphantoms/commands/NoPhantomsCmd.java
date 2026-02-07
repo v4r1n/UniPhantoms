@@ -1,4 +1,4 @@
-package xyz.srnyx.personalphantoms.commands;
+package xyz.srnyx.uniphantoms.commands;
 
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -17,9 +17,10 @@ import xyz.srnyx.annoyingapi.command.selector.Selector;
 import xyz.srnyx.annoyingapi.command.selector.SelectorOptional;
 import xyz.srnyx.annoyingapi.cooldown.AnnoyingCooldown;
 
-import xyz.srnyx.personalphantoms.PersonalPhantoms;
-import xyz.srnyx.personalphantoms.utility.TimeFormatter;
-import xyz.srnyx.personalphantoms.utility.TimeFormatter.TimeFormat;
+import xyz.srnyx.uniphantoms.UniPhantoms;
+import xyz.srnyx.uniphantoms.message.MiniMessageSender;
+import xyz.srnyx.uniphantoms.utility.TimeFormatter;
+import xyz.srnyx.uniphantoms.utility.TimeFormatter.TimeFormat;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -29,13 +30,12 @@ import java.util.stream.Collectors;
 
 
 public class NoPhantomsCmd extends AnnoyingCommand {
-    @NotNull private final PersonalPhantoms plugin;
+    @NotNull private final UniPhantoms plugin;
     @NotNull private final PermissionNode permissions;
 
-    public NoPhantomsCmd(@NotNull PersonalPhantoms plugin) {
+    public NoPhantomsCmd(@NotNull UniPhantoms plugin) {
         this.plugin = plugin;
 
-        // Setup fine-grained permissions
         this.permissions = PermissionNode.create("pp.nophantoms")
                 .registerArgument("reload", "pp.reload")
                 .registerArgument("get", "pp.nophantoms.get")
@@ -43,13 +43,31 @@ public class NoPhantomsCmd extends AnnoyingCommand {
     }
 
     @Override @NotNull
-    public PersonalPhantoms getAnnoyingPlugin() {
+    public UniPhantoms getAnnoyingPlugin() {
         return plugin;
     }
 
     @Override
     public String getPermission() {
         return "pp.nophantoms";
+    }
+
+    private void sendMessage(@NotNull CommandSender sender, @NotNull String key) {
+        final MiniMessageSender ms = plugin.getMessageSender();
+        if (ms != null) ms.send(sender, key);
+    }
+
+    @Nullable
+    private MiniMessageSender.Builder messageBuilder(@NotNull String key) {
+        final MiniMessageSender ms = plugin.getMessageSender();
+        return ms != null ? ms.builder(key) : null;
+    }
+
+    @Nullable
+    private Boolean determinePhantomAction(@NotNull AnnoyingSender sender) {
+        if (sender.argEquals(0, "toggle")) return null;
+        if (sender.argEquals(0, "enable")) return true;
+        return false;
     }
 
     public void onCommand(@NotNull AnnoyingSender sender) {
@@ -59,16 +77,13 @@ public class NoPhantomsCmd extends AnnoyingCommand {
         // reload
         if (sender.argEquals(0, "reload")) {
             if (!permissions.hasPermission(cmdSender, "reload")) {
-                plugin.getMessageSender().send(cmdSender, "error.no-permission");
+                sendMessage(cmdSender, "error.no-permission");
                 return;
             }
             plugin.reloadPlugin();
-            plugin.getMessageSender().send(cmdSender, "reload");
+            sendMessage(cmdSender, "reload");
             return;
         }
-
-        // This command handles both "/nophantoms" AND "/phantoms" (for convenience)
-        // Both commands work the same way (enable = เปิด phantom, disable = ปิด phantom)
 
         // Check for silent mode (-s flag)
         boolean silent = false;
@@ -82,12 +97,12 @@ public class NoPhantomsCmd extends AnnoyingCommand {
             // get
             if (sender.argEquals(0, "get")) {
                 if (!permissions.hasPermission(cmdSender, "get")) {
-                    plugin.getMessageSender().send(cmdSender, "error.no-permission");
+                    sendMessage(cmdSender, "error.no-permission");
                     return;
                 }
                 if (sender.checkPlayer()) {
                     final boolean phantomsEnabled = plugin.hasPhantomsEnabled(sender.getPlayer());
-                    plugin.getMessageSender().send(cmdSender, phantomsEnabled ? "get.self-enabled" : "get.self-disabled");
+                    sendMessage(cmdSender, phantomsEnabled ? "get.self-enabled" : "get.self-disabled");
                 }
                 return;
             }
@@ -96,13 +111,12 @@ public class NoPhantomsCmd extends AnnoyingCommand {
             if (sender.argEquals(0, "toggle", "enable", "disable")) {
                 final String action = sender.args[0].toLowerCase();
                 if (!permissions.hasPermission(cmdSender, action)) {
-                    plugin.getMessageSender().send(cmdSender, "error.no-permission");
+                    sendMessage(cmdSender, "error.no-permission");
                     return;
                 }
 
-                // Console must specify player
                 if (!sender.checkPlayer()) {
-                    plugin.getMessageSender().send(cmdSender, "error.console-specify-player");
+                    sendMessage(cmdSender, "error.console-specify-player");
                     return;
                 }
                 final Player player = sender.getPlayer();
@@ -111,81 +125,60 @@ public class NoPhantomsCmd extends AnnoyingCommand {
                 if (!cmdSender.hasPermission("pp.nophantoms.bypass")) {
                     final AnnoyingCooldown cooldown = plugin.cooldownManager.getCooldownElseNew("NoPhantomsCmd", player.getUniqueId().toString());
                     final long duration = getPermissionValue(player, "pp.nophantoms.cooldown.")
-                            .map(value -> value.longValue() * 1000) // Convert to milliseconds
+                            .map(value -> value.longValue() * 1000)
                             .orElse(plugin.config.commandCooldown);
                     if (cooldown.isOnCooldownStart(duration)) {
-                        plugin.getMessageSender().builder("nophantoms.cooldown")
-                                .replace("cooldown", TimeFormatter.format(cooldown.getRemaining(), TimeFormat.SHORT))
-                                .send(cmdSender);
+                        final MiniMessageSender.Builder builder = messageBuilder("nophantoms.cooldown");
+                        if (builder != null) {
+                            builder.replace("cooldown", TimeFormatter.format(cooldown.getRemaining(), TimeFormat.SHORT))
+                                    .send(cmdSender);
+                        }
                         return;
                     }
                 }
 
-                // Determine new status based on action
-                // Both /phantoms and /nophantoms work the same way:
-                // enable = เปิดใช้งาน phantom (true)
-                // disable = ปิดใช้งาน phantom (false)
-                final Boolean enablePhantoms;
-                if (sender.argEquals(0, "toggle")) {
-                    enablePhantoms = null; // toggle
-                } else if (sender.argEquals(0, "enable")) {
-                    enablePhantoms = true; // enable phantoms
-                } else { // disable
-                    enablePhantoms = false; // disable phantoms
-                }
-
-                // Edit
+                final Boolean enablePhantoms = determinePhantomAction(sender);
                 final boolean newStatus = editKey(player, enablePhantoms);
                 if (!silent) {
-                    plugin.getMessageSender().send(cmdSender, newStatus ? "nophantoms.self-enabled" : "nophantoms.self-disabled");
+                    sendMessage(cmdSender, newStatus ? "nophantoms.self-enabled" : "nophantoms.self-disabled");
                 }
                 return;
             }
 
-            plugin.getMessageSender().send(cmdSender, "error.invalid-arguments");
+            sendMessage(cmdSender, "error.invalid-arguments");
             return;
         }
 
         // Check args and permission
         if (effectiveLength != 2) {
-            plugin.getMessageSender().send(cmdSender, "error.invalid-arguments");
+            sendMessage(cmdSender, "error.invalid-arguments");
             return;
         }
         if (!sender.checkPermission("pp.nophantoms.others")) return;
 
         // Block selectors in console
         if (cmdSender instanceof ConsoleCommandSender && sender.args[1].startsWith("@")) {
-            plugin.getMessageSender().send(cmdSender, "error.console-no-selectors");
+            sendMessage(cmdSender, "error.console-no-selectors");
             return;
         }
 
-        // Get targets - bypass selector validation for player names to avoid invalid-argument error from AnnoyingAPI
+        // Get targets
         final List<OfflinePlayer> targets;
         final String targetArg = sender.args[1];
 
         if (targetArg.startsWith("@")) {
-            // Selector - use AnnoyingAPI's selector resolution
             final SelectorOptional<Player> selectorResult = sender.getSelector(1, Player.class);
-
-            // Use orElse to get the list or handle empty/null case
             final List<Player> onlinePlayers = selectorResult.orElse((arg) -> {
-                // If selector returns nothing, send error message and return null
-                plugin.getMessageSender().send(cmdSender, "error.invalid-selector");
+                sendMessage(cmdSender, "error.invalid-selector");
                 return null;
             });
-
-            // If selector failed or returned null
             if (onlinePlayers == null) return;
-
-            // If selector is valid but no players matched
             if (onlinePlayers.isEmpty()) {
-                plugin.getMessageSender().send(cmdSender, "error.no-players-found");
+                sendMessage(cmdSender, "error.no-players-found");
                 return;
             }
-
             targets = new ArrayList<>(onlinePlayers);
         } else {
-            // Player name - create list directly (bypass selector validation to avoid invalid-argument error)
             targets = new ArrayList<>();
             targets.add(Bukkit.getOfflinePlayer(targetArg));
         }
@@ -193,14 +186,20 @@ public class NoPhantomsCmd extends AnnoyingCommand {
         // get [<player>]
         if (sender.argEquals(0, "get")) {
             if (!permissions.hasPermission(cmdSender, "get")) {
-                plugin.getMessageSender().send(cmdSender, "error.no-permission");
+                sendMessage(cmdSender, "error.no-permission");
                 return;
             }
             for (final OfflinePlayer target : targets) {
+                final String targetName = target.getName();
+                if (targetName == null) {
+                    sendMessage(cmdSender, "error.player-not-found");
+                    continue;
+                }
                 final boolean phantomsEnabled = plugin.hasPhantomsEnabled(target);
-                plugin.getMessageSender().builder(phantomsEnabled ? "get.other-enabled" : "get.other-disabled")
-                        .replace("target", target.getName())
-                        .send(cmdSender);
+                final MiniMessageSender.Builder builder = messageBuilder(phantomsEnabled ? "get.other-enabled" : "get.other-disabled");
+                if (builder != null) {
+                    builder.replace("target", targetName).send(cmdSender);
+                }
             }
             return;
         }
@@ -209,40 +208,36 @@ public class NoPhantomsCmd extends AnnoyingCommand {
         if (sender.argEquals(0, "toggle", "enable", "disable")) {
             final String action = sender.args[0].toLowerCase();
             if (!permissions.hasPermission(cmdSender, action)) {
-                plugin.getMessageSender().send(cmdSender, "error.no-permission");
+                sendMessage(cmdSender, "error.no-permission");
                 return;
             }
+            final Boolean enablePhantoms = determinePhantomAction(sender);
             for (final OfflinePlayer target : targets) {
-                // Determine new status based on action
-                // Both /phantoms and /nophantoms work the same way:
-                // enable = เปิดใช้งาน phantom (true)
-                // disable = ปิดใช้งาน phantom (false)
-                final Boolean enablePhantoms;
-                if (sender.argEquals(0, "toggle")) {
-                    enablePhantoms = null; // toggle
-                } else if (sender.argEquals(0, "enable")) {
-                    enablePhantoms = true; // enable phantoms
-                } else { // disable
-                    enablePhantoms = false; // disable phantoms
+                final String targetName = target.getName();
+                if (targetName == null) {
+                    sendMessage(cmdSender, "error.player-not-found");
+                    continue;
                 }
 
                 final boolean newStatus = editKey(target, enablePhantoms);
                 if (!silent) {
-                    plugin.getMessageSender().builder(newStatus ? "nophantoms.toggler-enabled" : "nophantoms.toggler-disabled")
-                            .replace("target", target.getName())
-                            .send(cmdSender);
+                    final MiniMessageSender.Builder togglerBuilder = messageBuilder(newStatus ? "nophantoms.toggler-enabled" : "nophantoms.toggler-disabled");
+                    if (togglerBuilder != null) {
+                        togglerBuilder.replace("target", targetName).send(cmdSender);
+                    }
                     final Player targetOnline = target.getPlayer();
                     if (targetOnline != null) {
-                        plugin.getMessageSender().builder(newStatus ? "nophantoms.other-enabled" : "nophantoms.other-disabled")
-                                .replace("toggler", cmdSender.getName())
-                                .send(targetOnline);
+                        final MiniMessageSender.Builder otherBuilder = messageBuilder(newStatus ? "nophantoms.other-enabled" : "nophantoms.other-disabled");
+                        if (otherBuilder != null) {
+                            otherBuilder.replace("toggler", cmdSender.getName()).send(targetOnline);
+                        }
                     }
                 }
             }
             return;
         }
 
-        plugin.getMessageSender().send(cmdSender, "error.invalid-arguments");
+        sendMessage(cmdSender, "error.invalid-arguments");
     }
 
     @Override @Nullable
@@ -250,7 +245,6 @@ public class NoPhantomsCmd extends AnnoyingCommand {
         final CommandSender cmdSender = sender.cmdSender;
         final int length = sender.args.length;
 
-        // <reload|get|toggle|enable|disable>
         if (length == 1) {
             final List<String> list = new ArrayList<>();
             if (permissions.hasPermission(cmdSender, "reload")) list.add("reload");
@@ -261,20 +255,20 @@ public class NoPhantomsCmd extends AnnoyingCommand {
             return list;
         }
 
-        // <get|toggle|enable|disable> [<player>]
-        if (length == 2 && !sender.argEquals(0, "reload") && cmdSender.hasPermission("pp.nophantoms.others")) {
-            return Selector.addKeys(getOnlinePlayerNames(), OfflinePlayer.class);
-        }
-
-        // <get|toggle|enable|disable> [<player>] -s
-        if (length == 3 && sender.argEquals(0, "get", "toggle", "enable", "disable") && cmdSender.hasPermission("pp.nophantoms.others")) {
+        // <get|toggle|enable|disable> [<player>|-s]
+        if (length == 2 && !sender.argEquals(0, "reload")) {
             final List<String> list = new ArrayList<>();
-            list.add("-s");
+            if (sender.argEquals(0, "toggle", "enable", "disable") && cmdSender.hasPermission("pp.nophantoms")) {
+                list.add("-s");
+            }
+            if (cmdSender.hasPermission("pp.nophantoms.others")) {
+                list.addAll(Selector.addKeys(getOnlinePlayerNames(), OfflinePlayer.class));
+            }
             return list;
         }
 
-        // <toggle|enable|disable> -s (for self)
-        if (length == 2 && sender.argEquals(0, "toggle", "enable", "disable") && cmdSender.hasPermission("pp.nophantoms")) {
+        // <get|toggle|enable|disable> <player> -s
+        if (length == 3 && sender.argEquals(0, "get", "toggle", "enable", "disable") && cmdSender.hasPermission("pp.nophantoms.others")) {
             final List<String> list = new ArrayList<>();
             list.add("-s");
             return list;
@@ -283,15 +277,6 @@ public class NoPhantomsCmd extends AnnoyingCommand {
         return null;
     }
 
-    /**
-     * Get permission value from player's permissions
-     * Replacement for BukkitUtility.getPermissionValue()
-     *
-     * @param   player  the player to check permissions for
-     * @param   prefix  the permission prefix to search for (e.g., "pp.nophantoms.cooldown.")
-     *
-     * @return          the numeric value from the permission, or empty if not found
-     */
     @NotNull
     private Optional<Double> getPermissionValue(@NotNull Player player, @NotNull String prefix) {
         for (final PermissionAttachmentInfo info : player.getEffectivePermissions()) {
@@ -301,18 +286,11 @@ public class NoPhantomsCmd extends AnnoyingCommand {
             try {
                 return Optional.of(Double.parseDouble(permission.substring(prefix.length())));
             } catch (final NumberFormatException ignored) {
-                // Continue searching if parsing fails
             }
         }
         return Optional.empty();
     }
 
-    /**
-     * Get all online player names
-     * Replacement for BukkitUtility.getOnlinePlayerNames()
-     *
-     * @return  list of online player names
-     */
     @NotNull
     private List<String> getOnlinePlayerNames() {
         return Bukkit.getOnlinePlayers().stream()
@@ -320,31 +298,17 @@ public class NoPhantomsCmd extends AnnoyingCommand {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Edit the key status for a player
-     *
-     * @param   offline         the player to edit the key status for
-     *
-     * @param   enablePhantoms  whether to enable or disable phantoms for the player
-     *
-     * @return                  the new status of the key (true if phantoms enabled, false if disabled)
-     */
     private boolean editKey(@NotNull OfflinePlayer offline, @Nullable Boolean enablePhantoms) {
-        // Determine new status
-        if (enablePhantoms == null) enablePhantoms = !plugin.hasPhantomsEnabled(offline); // toggle
+        if (enablePhantoms == null) enablePhantoms = !plugin.hasPhantomsEnabled(offline);
 
-        // Update using new database-aware method
         plugin.setPhantomsEnabled(offline, enablePhantoms);
 
-        // Update statistic for online players
         final Player online = offline.getPlayer();
         if (online != null && plugin.isWhitelistedWorld(online.getWorld())) {
             if (enablePhantoms) {
-                // Set statistic to 1 hour (so phantoms will attack)
                 online.setStatistic(Statistic.TIME_SINCE_REST, 72000);
             } else {
-                // Reset statistic (so phantoms won't attack)
-                PersonalPhantoms.resetStatistic(online);
+                UniPhantoms.resetStatistic(online);
             }
         }
 

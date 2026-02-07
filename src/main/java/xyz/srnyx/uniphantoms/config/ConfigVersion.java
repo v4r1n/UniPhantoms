@@ -1,4 +1,4 @@
-package xyz.srnyx.personalphantoms.config;
+package xyz.srnyx.uniphantoms.config;
 
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.Plugin;
