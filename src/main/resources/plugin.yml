@@ -1,12 +1,13 @@
-name: ${name}
+name: UniPhantoms
 description: ${description}
 authors:
   - srnyx
+  - v4r1n
 website: https://srnyx.com
 
 main: ${mainPackage}.${name}
 version: ${version}
-api-version: 1.13
+api-version: 1.21
 folia-supported: true
 
 softdepend:
@@ -15,20 +16,46 @@ softdepend:
 commands:
   nophantoms:
     description: Main command for Personal Phantoms
-    aliases:
-      - phantoms
+    usage: |
+      /<command> reload - Reload plugin (Console supported)
+      /<command> get [player] - Check status (Console: must specify player)
+      /<command> toggle [player] [-s] - Toggle phantoms (Console: must specify player)
+      /<command> enable [player] [-s] - Enable phantoms (Console: must specify player)
+      /<command> disable [player] [-s] - Disable phantoms (Console: must specify player)
     permission: pp.nophantoms
 
 permissions:
   pp.reload:
     description: Allows the player to use /nophantoms reload
+    default: op
   pp.nophantoms:
-    description: Allows the player to use /nophantoms
+    description: Allows the player to use /nophantoms (base permission)
+    default: true
+    children:
+      pp.nophantoms.get: true
+      pp.nophantoms.toggle: true
+  pp.nophantoms.get:
+    description: Allows the player to check their own phantom status
+    default: true
+  pp.nophantoms.toggle:
+    description: Allows the player to toggle, enable, or disable phantoms for themselves
     default: true
   pp.nophantoms.others:
     description: Allows the player to toggle phantoms for other players
+    default: op
   pp.nophantoms.bypass:
     description: Allows the player to bypass the /nophantoms command cooldown
+    default: op
   pp.nophantoms.cooldown.#:
     description: "Set a custom cooldown for the /nophantoms command, replace # with the cooldown time (in seconds)"
     default: false
+  pp.nophantoms.*:
+    description: Grants all Personal Phantoms permissions
+    default: op
+    children:
+      pp.reload: true
+      pp.nophantoms: true
+      pp.nophantoms.get: true
+      pp.nophantoms.toggle: true
+      pp.nophantoms.others: true
+      pp.nophantoms.bypass: true

@@ -1,50 +1,60 @@
-DOCUMENTATION: https://annoying-api.srnyx.com/wiki/messages-file
+# Personal Phantoms - Messages Configuration
+# รูปแบบ MiniMessage: https://docs.advntr.dev/minimessage/format.html
+# รูปแบบ Legacy: https://docs.advntr.dev/legacy.html
+# ไฟล์นี้รองรับทั้งรูปแบบ MiniMessage (<tag>) และ Legacy (&)
 
+# Placeholders:
+#   %prefix% - คำนำหน้าของปลั๊กอิน
+#   %permission% - สิทธิ์ที่ต้องการ
+#   %argument% - อาร์กิวเมนต์ที่ไม่ถูกต้อง
+#   %cooldown% - เวลาคูลดาวน์
+#   %command% - ชื่อคำสั่ง
+#   %target% - ชื่อผู้เล่นเป้าหมาย
+#   %toggler% - ชื่อผู้ที่สลับสถานะเปิด/ปิด Phantom
 
-# Messages for general plugin usage
 plugin:
-  # These are placeholders that can be used in any message in this file
-  # This is extremely useful for things like prefixes, color schemes, and more
-  # Using a global placeholder is just like any other placeholder! Simply surround the placeholder name with "%" (ex: "%prefix%")
-  # WARNING: Global placeholders can conflict with local placeholders! Please be wary when creating your own global placeholder(s)!
-  global-placeholders: # It's recommended to keep all the default global placeholders (prefix, p, s, pe, se)
-    prefix: "&5&lPHANTOMS &8&l| &d" # Prefix for the plugin, typically used in the beginning of most messages
-    p: "&d" # Base color for non-error messages
-    s: "&5" # Highlight color for non-error messages
-    pe: "&c" # Base color for error messages
-    se: "&4" # Highlight color for error messages
+  # ตัวแปร Global ที่สามารถใช้ได้ในทุกข้อความ
+  global-placeholders:
+    prefix: "&#FFD700&lsʏsᴛᴇᴍ &8| "
 
-  # These are the different splitters for messages/placeholders
-  splitters:
-    # This is the splitter for the JSON components. Default: "@@"
-    json: "@@"
-    # This is the splitter for placeholders with parameters. Default: "=="
-    placeholder: "=="
-
-  # Message sent in the console when an update for the plugin is available
-  update-available: "%pe%A new version of %se%%plugin%%pe% is available! | Current: %se%%current%%pe% | New: %se%%new%" # %plugin%, %current%, %new%
-
-# Error messages when a player does something wrong
+# ข้อความผิดพลาด (Error Messages)
 error:
-  # Player doesn't have permission to use a command
-  no-permission: "%prefix%%pe%You must have %se%%permission%%pe% to use this!@@%pe%%command%@@%command%" # %permission%
-  # Console tries to use a command that can only be used by players
-  player-only: "%prefix%%pe%You must be a player to run this command!@@%pe%%command%@@%command%"
-  # Command is used with an invalid/incorrect argument
-  invalid-argument: "%prefix%%se%%argument%%pe% is an invalid argument!@@%pe%%command%@@%command%" # %argument%
-  # Command is used with multiple invalid/incorrect arguments
-  invalid-arguments: "%prefix%%pe%Invalid arguments!@@%pe%%command%@@%command%"
-  # Command is used when it's disabled
-  disabled-command: "%prefix%%se%%command%%pe% is disabled!@@%pe%%command%@@%command%"
+  no-permission: "&c&lᴇʀʀᴏʀ &r&8| &cคุณไม่มีสิทธิ์ในการทำสิ่งนี้!"
+  player-only: "%prefix%&cผู้เล่นเท่านั้นที่ใช้คำสั่งนี้ได้!"
+  console-specify-player: "%prefix%&cConsole ต้องระบุชื่อผู้เล่น! &7ใช้&8: &6/phantoms &e<action> <player>"
+  console-no-selectors: "%prefix%&cไม่สามารถใช้คำสั่งนี้ใน console ได้! Selectors (&6@a, @p, @r, @s, @e&c)</f> ไม่รองรับใน console"
+  invalid-argument: "%prefix%&c&6%argument% &cไม่ใช่อาร์กิวเมนต์ที่ถูกต้อง!"
+  invalid-arguments: "%prefix%&cการใช้คำสั่งไม่ถูกต้อง!"
+  invalid-selector: "%prefix%&cSelector ไม่ถูกต้อง! ตรวจสอบว่าคุณใช้ selector ที่ถูกต้อง"
+  no-players-found: "%prefix%&cไม่พบผู้เล่นที่ตรงกับ selector นี้!"
+  disabled-command: "%prefix%&cระบบปิดใช้งานคำสั่ง &6%command% &cอยู่ในขณะนี้!"
 
-reload: "%prefix%Reloaded the plugin!@@%command%@@%command%"
+# คำสั่งทั่วไป (General Commands)
+reload: "%prefix%&fรีโหลดการตั้งค่าสำเร็จแล้ว!"
 
+# คำสั่งเปิด/ปิด  Phantom  - สำหรับตนเอง (Self)
 nophantoms:
-  cooldown: "%prefix%%pe%You can't use this command for another %se%%cooldown==m'm' s's'%%pe%!@@%p%%command%@@%command%" # %cooldown==time%
-  self: "%prefix%You have %s%%status==enabled//disabled%%p% phantoms@@%p%%command%@@%command%" # %status==boolean%
-  toggler: "%prefix%You have %s%%status==enabled//disabled%%p% phantoms for %s%%target%@@%p%%command%@@%command%" # %status==boolean%, %target%
-  other: "%prefix%%s%%toggler%%p% has %s%%status==enabled//disabled%%p% phantoms for you@@%p%%command%@@%command%" # %toggler%, %status==boolean%
+  cooldown: "%prefix%&cโปรดรอ &e%cooldown% &cก่อนใช้งานอีกครั้ง!"
+  # สลับสถานะของตัวเอง - เปิดใช้งาน
+  self-enabled: "%prefix%&fคุณ &2เปิดใช้งาน &fการป้องกัน Phantom สำหรับตัวคุณแล้ว"
+  # สลับสถานะของตัวเอง - ปิดใช้งาน
+  self-disabled: "%prefix%&fคุณ &cปิดใช้งาน &fการป้องกัน Phantom สำหรับตัวคุณแล้ว"
+  # ข้อความถึงผู้ส่งคำสั่ง เมื่อเปิดใช้งาน Phantom ให้ผู้อื่น
+  toggler-enabled: "%prefix%&fคุณ &2เปิดใช้งาน &fการป้องกัน Phantom แล้ว"
+  # ข้อความถึงผู้ส่งคำสั่ง เมื่อปิดใช้งาน Phantom ให้ผู้อื่น
+  toggler-disabled: "%prefix%&fคุณ &cปิดใช้งาน &fการป้องกัน Phantom แล้ว"
+  # ข้อความถึงผู้เล่นเป้าหมาย เมื่อมีคนเปิดใช้งาน Phantom ให้
+  other-enabled: "%prefix%<aqua>%toggler%</aqua> &fได้ &2เปิดใช้งาน &fการป้องกัน Phantom ให้กับคุณ"
+  # ข้อความถึงผู้เล่นเป้าหมาย เมื่อมีคนปิดใช้งาน Phantom ให้
+  other-disabled: "%prefix%<aqua>%toggler%</aqua> &fได้ &cปิดใช้งาน &fการป้องกัน Phantom ให้กับคุณ"
 
-get: # %phantoms==boolean%
-  self: "%prefix%%p%You have phantoms %s%%status==enabled//disabled%@@%p%%command%@@%command%"
-  other: "%prefix%%s%%target%%p% has phantoms %s%%status==enabled//disabled%@@%p%%command%@@%command%" # %target%
+# คำสั่งตรวจสอบสถานะ (Get Status Commands)
+get:
+  # ตรวจสอบสถานะ Phantom ของตนเอง - เปิดอยู่
+  self-enabled: "%prefix%&fคุณกำลัง &2เปิดใช้งาน &fการป้องกัน Phantom อยู่"
+  # ตรวจสอบสถานะ Phantom ของตนเอง - ปิดอยู่
+  self-disabled: "%prefix%&fคุณกำลัง &cปิดใช้งาน &fการป้องกัน Phantom อยู่"
+  # ตรวจสอบสถานะ Phantom ของผู้เล่นอื่น - เปิดอยู่
+  other-enabled: "%prefix%&b%target% &fกำลัง &2เปิดใช้งาน &fการป้องกัน Phantom อยู่"
+  # ตรวจสอบสถานะ Phantom ของผู้เล่นอื่น - ปิดอยู่
+  other-disabled: "%prefix%&b%target% &fกำลัง &cปิดใช้งาน &fการป้องกัน Phantom อยู่"

@@ -1,26 +1,41 @@
-# The default toggle state for phantoms (true = phantoms enabled, false = phantoms disabled)
+# เวอร์ชัน Config (ห้ามแก้ไข)
+config-version: 3
+
+# สถานะเริ่มต้นสำหรับการเปิด/ปิด แฟนธอม (true = เปิดแฟนธอม, false = ปิดแฟนธอม)
 default: true
 
-# How long until a player can toggle phantoms again
-# You can give permission holders the 'pp.nophantoms.bypass' permission to ignore this cooldown
-# Or, you can give the 'pp.nophantoms.cooldown.#' permission to set a custom cooldown (replace # with the cooldown time in seconds)
-command-cooldown: 600 # seconds
+# ผู้เล่นต้องรอนานแค่ไหนจึงจะสามารถสลับสถานะแฟนธอมได้อีกครั้ง
+# คุณสามารถมอบสิทธิ์ 'pp.nophantoms.bypass' ให้ผู้เล่นเพื่อเพิกเฉยต่อคูลดาวน์นี้ได้
+# หรือ คุณสามารถมอบสิทธิ์ 'pp.nophantoms.cooldown.#' เพื่อตั้งค่าคูลดาวน์แบบกำหนดเอง (แทนที่ # ด้วยเวลาคูลดาวน์เป็นวินาที)
+command-cooldown: 600 # วินาที
 
-# The plugin works by resetting player sleep statistics so that phantoms never spawn
-# These options relate to how often the plugin should reset player sleep statistics (in ticks, 20 ticks = 1 second)
+# ปลั๊กอินทำงานโดยการรีเซ็ตสถิติการนอนของผู้เล่น เพื่อให้แฟนธอมไม่เกิด
+# ตัวเลือกเหล่านี้เกี่ยวข้องกับความถี่ที่ปลั๊กอินควรรีเซ็ตสถิติการนอนของผู้เล่น (หน่วยเป็น Ticks, 20 Ticks = 1 วินาที)
 statistic-task:
-  # The delay before the first run of the task (since plugin load)
-  # automatic = the plugin will automatically calculate the best delay based on the current time of day in-game (per world)
+  # เวลาหน่วงก่อนเริ่มงานครั้งแรก (นับตั้งแต่โหลดปลั๊กอิน)
+  # automatic = ปลั๊กอินจะคำนวณเวลาหน่วงที่ดีที่สุดโดยอัตโนมัติ ตามเวลาในเกมปัจจุบัน (ต่อโลก)
   delay: automatic # ticks
-  # The period between each run of the task
-  # Default: 2400 ticks = 20 minutes = 1 full Minecraft day
+  # ระยะเวลาระหว่างการทำงานแต่ละรอบ
+  # ค่าเริ่มต้น: 24000 ticks = 20 นาที = 1 วันเต็มใน Minecraft
   period: 24000 # ticks
 
-# A list of worlds where the plugin won't be enabled
+# รายชื่อโลกที่ปลั๊กอินจะไม่ทำงาน (Blacklist)
 worlds-blacklist:
   list:
     - "world_nether"
     - "world_the_end"
 
-  # If true, the list of worlds above will act as a whitelist, meaning only those worlds will have the plugin enabled
+  # หากเป็น true รายชื่อโลกด้านบนจะทำหน้าที่เป็น Whitelist หมายความว่าปลั๊กอินจะทำงานเฉพาะในโลกเหล่านี้เท่านั้น
   treat-as-whitelist: false
+
+# การรายงานข้อผิดพลาด (ERROR REPORTING)
+error-reporting:
+  # บันทึกรายงานข้อผิดพลาดลงไฟล์ในโฟลเดอร์ plugins/PersonalPhantoms/errors/
+  save-to-file: true
+
+  # แสดงข้อความข้อผิดพลาดโดยละเอียดในคอนโซล (มีประโยชน์สำหรับการแก้ไขจุดบกพร่อง)
+  verbose: false
+
+# เปิดใช้งานโหมดดีบัก สำหรับนักพัฒนาและการทดสอบเท่านั้น
+# แสดงข้อความรายละเอียดการทำงานของปลั๊กอินในคอนโซล (Database operations, etc.)
+debug-mode: false

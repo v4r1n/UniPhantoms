@@ -19,8 +19,10 @@ public class ConfigYml {
      */
     public final boolean def;
     public final long commandCooldown;
-    @NotNull public StatisticTask statisticTask;
-    @NotNull public WorldsBlacklist worldsBlacklist;
+    @NotNull public final StatisticTask statisticTask;
+    @NotNull public final WorldsBlacklist worldsBlacklist;
+    @NotNull public final ErrorReporting errorReporting;
+    public final boolean debugMode;
 
     public ConfigYml(@NotNull AnnoyingPlugin plugin) {
         config = new AnnoyingResource(plugin, "config.yml");
@@ -29,20 +31,41 @@ public class ConfigYml {
         commandCooldown = config.getLong("command-cooldown", 600) * 1000; // default: 10 minutes
         statisticTask = new StatisticTask();
         worldsBlacklist = new WorldsBlacklist();
+        errorReporting = new ErrorReporting();
+        debugMode = config.getBoolean("debug-mode", false);
     }
 
     public class StatisticTask {
-        @Nullable public final Long delay = config.getString("statistic-task.delay", "automatic").equals("automatic") ? null : config.getLong("statistic-task.delay"); // default: automatic
-        public final long period = config.getLong("statistic-task.period", 24000); // default: 20 minutes (1 in-game day)
+        @Nullable public final Long delay;
+        public final long period;
+
+        public StatisticTask() {
+            this.delay = config.getString("statistic-task.delay", "automatic").equals("automatic")
+                    ? null
+                    : config.getLong("statistic-task.delay");
+            this.period = config.getLong("statistic-task.period", 24000); // default: 20 minutes (1 in-game day)
+        }
     }
 
     public class WorldsBlacklist {
         @Nullable public final Set<String> list;
-        public final boolean treatAsWhitelist = config.getBoolean("worlds-blacklist.treat-as-whitelist");
+        public final boolean treatAsWhitelist;
 
         public WorldsBlacklist() {
+            this.treatAsWhitelist = config.getBoolean("worlds-blacklist.treat-as-whitelist", false);
             final List<String> stringList = config.getStringList("worlds-blacklist.list");
             this.list = stringList.isEmpty() && !treatAsWhitelist ? null : new HashSet<>(stringList);
         }
     }
+
+    public class ErrorReporting {
+        public final boolean saveToFile;
+        public final boolean verbose;
+
+        public ErrorReporting() {
+            this.saveToFile = config.getBoolean("error-reporting.save-to-file", true);
+            this.verbose = config.getBoolean("error-reporting.verbose", false);
+        }
+    }
+
 }
