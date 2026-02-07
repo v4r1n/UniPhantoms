@@ -100,7 +100,7 @@ public class NoPhantomsCmd extends AnnoyingCommand {
                     sendMessage(cmdSender, "error.no-permission");
                     return;
                 }
-                if (sender.checkPlayer()) {
+                if (cmdSender instanceof Player) {
                     final boolean phantomsEnabled = plugin.hasPhantomsEnabled(sender.getPlayer());
                     sendMessage(cmdSender, phantomsEnabled ? "get.self-enabled" : "get.self-disabled");
                 }
@@ -115,7 +115,7 @@ public class NoPhantomsCmd extends AnnoyingCommand {
                     return;
                 }
 
-                if (!sender.checkPlayer()) {
+                if (!(cmdSender instanceof Player)) {
                     sendMessage(cmdSender, "error.console-specify-player");
                     return;
                 }
@@ -154,7 +154,10 @@ public class NoPhantomsCmd extends AnnoyingCommand {
             sendMessage(cmdSender, "error.invalid-arguments");
             return;
         }
-        if (!sender.checkPermission("pp.nophantoms.others")) return;
+        if (!cmdSender.hasPermission("pp.nophantoms.others")) {
+            sendMessage(cmdSender, "error.no-permission");
+            return;
+        }
 
         // Block selectors in console
         if (cmdSender instanceof ConsoleCommandSender && sender.args[1].startsWith("@")) {
