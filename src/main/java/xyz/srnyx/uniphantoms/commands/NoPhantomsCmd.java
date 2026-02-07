@@ -182,8 +182,13 @@ public class NoPhantomsCmd extends AnnoyingCommand {
             }
             targets = new ArrayList<>(onlinePlayers);
         } else {
+            final OfflinePlayer target = Bukkit.getOfflinePlayer(targetArg);
+            if (!target.hasPlayedBefore() && !target.isOnline()) {
+                sendMessage(cmdSender, "error.player-not-found");
+                return;
+            }
             targets = new ArrayList<>();
-            targets.add(Bukkit.getOfflinePlayer(targetArg));
+            targets.add(target);
         }
 
         // get [<player>]
